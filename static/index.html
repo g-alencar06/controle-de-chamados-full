@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chamados</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --fundo: #eef1f5;
+      --painel: #ffffff;
+      --tinta: #18212b;
+      --tinta-suave: #5b6673;
+      --linha: #dbe1e8;
+      --linha-forte: #c3ccd6;
+      --aberto: #c2410c;
+      --andamento: #1d5fd1;
+      --resolvido: #2c7a4b;
+      --perigo: #b42318;
+      --raio: 6px;
+      --fonte: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; background: var(--fundo); color: var(--tinta);
+      font: 400 15px/1.5 var(--fonte); -webkit-font-smoothing: antialiased;
+    }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+    :focus-visible { outline: 2px solid var(--andamento); outline-offset: 2px; }
+
+    /* ---------- Estrutura ---------- */
+    .app { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100vh; }
+
+    .lateral {
+      background: var(--painel); border-right: 1px solid var(--linha);
+      padding: 24px 16px; display: flex; flex-direction: column; gap: 28px;
+      position: sticky; top: 0; height: 100vh; overflow-y: auto;
+    }
+    .marca { font-size: 18px; font-weight: 700; letter-spacing: -.01em; padding: 0 8px; }
+    .marca small { display: block; font-size: 13px; font-weight: 400; color: var(--tinta-suave); letter-spacing: 0; }
+
+    .grupo h2 { margin: 0 8px 6px; font-size: 13px; font-weight: 600; color: var(--tinta-suave); }
+    .grupo ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+    .filtro {
+      width: 100%; display: flex; align-items: center; gap: 10px; text-align: left;
+      background: none; border: 0; border-radius: var(--raio); padding: 7px 8px;
+    }
+    .filtro:hover { background: var(--fundo); }
+    .filtro[aria-pressed="true"] { background: var(--tinta); color: #fff; }
+    .filtro .n { margin-left: auto; font-variant-numeric: tabular-nums; font-size: 13px; color: var(--tinta-suave); }
+    .filtro[aria-pressed="true"] .n { color: #c9d2dc; }
+    .ponto { width: 9px; height: 9px; border-radius: 50%; background: var(--linha-forte); flex: none; }
+    .ponto.aberto { background: var(--aberto); }
+    .ponto.andamento { background: var(--andamento); }
+    .ponto.resolvido { background: var(--resolvido); }
+
+    /* ---------- Conteúdo ---------- */
+    main { padding: 32px clamp(16px, 4vw, 48px) 64px; max-width: 1040px; width: 100%; }
+    .topo { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+    .topo h1 { margin: 0; font-size: 28px; line-height: 1.15; letter-spacing: -.02em; font-weight: 700; }
+    .topo p { margin: 4px 0 0; color: var(--tinta-suave); }
+
+    .btn {
+      border: 1px solid var(--linha-forte); background: var(--painel); border-radius: var(--raio);
+      padding: 8px 14px; font-weight: 500;
+    }
+    .btn:hover { border-color: var(--tinta-suave); }
+    .btn-principal { background: var(--tinta); border-color: var(--tinta); color: #fff; font-weight: 600; }
+    .btn-principal:hover { background: #2b3947; border-color: #2b3947; }
+    .btn-perigo { background: var(--perigo); border-color: var(--perigo); color: #fff; font-weight: 600; }
+    .btn-perigo:hover { background: #912018; border-color: #912018; }
+
+    /* ---------- Lista ---------- */
+    .fila { background: var(--painel); border: 1px solid var(--linha); border-radius: 8px; overflow: hidden; }
+    .chamado {
+      display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 4px 16px;
+      padding: 16px 20px; border-top: 1px solid var(--linha);
+    }
+    .chamado:first-child { border-top: 0; }
+    .chamado.resolvido .titulo { color: var(--tinta-suave); text-decoration: line-through; text-decoration-color: var(--linha-forte); }
+
+    .sinal { display: flex; align-items: flex-end; gap: 2px; height: 16px; padding-top: 3px; }
+    .sinal i { width: 4px; border-radius: 1px; background: var(--linha-forte); }
+    .sinal i:nth-child(1) { height: 5px; } .sinal i:nth-child(2) { height: 10px; } .sinal i:nth-child(3) { height: 15px; }
+    .sinal.n1 i:nth-child(-n+1), .sinal.n2 i:nth-child(-n+2), .sinal.n3 i:nth-child(-n+3) { background: var(--tinta); }
+    .sinal.n3 i:nth-child(-n+3) { background: var(--aberto); }
+
+    .corpo { min-width: 0; }
+    .titulo { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; }
+    .titulo .id { font-variant-numeric: tabular-nums; color: var(--tinta-suave); font-weight: 500; margin-right: 6px; }
+    .desc { margin: 4px 0 0; color: #3b4652; max-width: 68ch; overflow-wrap: anywhere; white-space: pre-line; }
+    .meta { margin-top: 8px; font-size: 13px; color: var(--tinta-suave); }
+
+    .acoes { grid-column: 3; grid-row: 1 / span 2; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+    .estado { display: inline-flex; border: 1px solid var(--linha-forte); border-radius: var(--raio); overflow: hidden; }
+    .estado button {
+      background: none; border: 0; border-left: 1px solid var(--linha); padding: 5px 10px; font-size: 13px; color: var(--tinta-suave);
+    }
+    .estado button:first-child { border-left: 0; }
+    .estado button:hover { background: var(--fundo); color: var(--tinta); }
+    .estado button[aria-pressed="true"] { color: #fff; font-weight: 600; }
+    .estado button[data-v="aberto"][aria-pressed="true"] { background: var(--aberto); }
+    .estado button[data-v="em andamento"][aria-pressed="true"] { background: var(--andamento); }
+    .estado button[data-v="resolvido"][aria-pressed="true"] { background: var(--resolvido); }
+
+    .extras { display: flex; align-items: center; gap: 8px; }
+    .extras select { border: 1px solid var(--linha-forte); background: var(--painel); border-radius: var(--raio); padding: 4px 6px; font-size: 13px; }
+    .btn-reabrir { background: #fff; border: 1px solid var(--aberto); color: var(--aberto); border-radius: var(--raio); padding: 4px 10px; font-size: 13px; font-weight: 600; }
+    .btn-reabrir:hover { background: var(--aberto); color: #fff; }
+    .link-excluir { background: none; border: 0; padding: 4px 6px; font-size: 13px; color: var(--tinta-suave); border-radius: var(--raio); }
+    .link-excluir:hover { color: var(--perigo); background: #fdecea; }
+
+    .vazio { padding: 56px 24px; text-align: center; color: var(--tinta-suave); }
+    .vazio strong { display: block; color: var(--tinta); font-size: 16px; margin-bottom: 4px; }
+
+    /* ---------- Diálogos ---------- */
+    dialog { border: 0; border-radius: 10px; padding: 0; width: min(480px, calc(100vw - 32px)); box-shadow: 0 24px 60px rgba(24,33,43,.28); color: var(--tinta); }
+    dialog::backdrop { background: rgba(24,33,43,.45); }
+    dialog form { padding: 24px; display: grid; gap: 16px; }
+    dialog h2 { margin: 0; font-size: 20px; letter-spacing: -.01em; }
+    dialog p { margin: 0; color: var(--tinta-suave); }
+    label { display: grid; gap: 5px; font-weight: 500; font-size: 14px; }
+    label .opc { font-weight: 400; color: var(--tinta-suave); }
+    label .rotulo { display: block; }
+    input, textarea, select.campo { width: 100%; border: 1px solid var(--linha-forte); border-radius: var(--raio); padding: 9px 10px; background: #fff; }
+    textarea { resize: vertical; min-height: 84px; }
+    .linha2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .rodape { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+    .erro { color: var(--perigo); font-size: 14px; min-height: 0; }
+    .erro:empty { display: none; }
+
+    .aviso {
+      position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 16px); opacity: 0;
+      background: var(--tinta); color: #fff; padding: 10px 16px; border-radius: var(--raio); font-size: 14px;
+      pointer-events: none; transition: opacity .2s, transform .2s;
+    }
+    .aviso.visivel { opacity: 1; transform: translate(-50%, 0); }
+
+    /* ---------- Responsivo ---------- */
+    @media (max-width: 860px) {
+      .app { grid-template-columns: 1fr; }
+      .lateral { position: static; height: auto; flex-direction: row; flex-wrap: wrap; gap: 16px 24px; border-right: 0; border-bottom: 1px solid var(--linha); }
+      .marca { width: 100%; }
+      .lateral { padding: 16px; }
+      .grupo { flex: 1 1 100%; }
+      .grupo h2 { margin-left: 0; }
+      .grupo ul { display: flex; flex-wrap: wrap; gap: 6px; }
+      .filtro { width: auto; border: 1px solid var(--linha-forte); padding: 5px 10px; }
+    }
+    @media (max-width: 620px) {
+      .chamado { grid-template-columns: 24px minmax(0, 1fr); padding: 14px 16px; }
+      .acoes { grid-column: 1 / -1; grid-row: auto; align-items: flex-start; margin-top: 8px; }
+      .topo { align-items: flex-start; flex-direction: column; }
+      .linha2 { grid-template-columns: 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) { .aviso { transition: none; } }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="lateral">
+    <div class="marca">Chamados<small>Fila de suporte</small></div>
+
+    <nav class="grupo" aria-label="Filtrar por status">
+      <h2>Status</h2>
+      <ul id="filtros-status"></ul>
+    </nav>
+
+    <nav class="grupo" aria-label="Filtrar por prioridade">
+      <h2>Prioridade</h2>
+      <ul id="filtros-prioridade"></ul>
+    </nav>
+  </aside>
+
+  <main>
+    <div class="topo">
+      <div>
+        <h1 id="titulo-lista">Todos os chamados</h1>
+        <p id="resumo" aria-live="polite"></p>
+      </div>
+      <button class="btn btn-principal" id="abrir-novo">Novo chamado</button>
+    </div>
+    <div class="fila" id="lista"></div>
+  </main>
+</div>
+
+<!-- Novo chamado -->
+<dialog id="dlg-novo" aria-labelledby="dlg-novo-t">
+  <form id="form" method="dialog" novalidate>
+    <h2 id="dlg-novo-t">Novo chamado</h2>
+    <label><span class="rotulo">Título</span>
+      <input id="titulo" maxlength="120" placeholder="Ex.: Impressora do 2º andar não imprime" required>
+    </label>
+    <label><span class="rotulo">Descrição <span class="opc">(opcional)</span></span>
+      <textarea id="descricao" placeholder="O que aconteceu, desde quando e o que já foi tentado"></textarea>
+    </label>
+    <div class="linha2">
+      <label>Solicitante
+        <input id="solicitante" maxlength="80" placeholder="Nome de quem pediu" required>
+      </label>
+      <label>Prioridade
+        <select id="prioridade" class="campo">
+          <option value="baixa">Baixa</option>
+          <option value="media" selected>Média</option>
+          <option value="alta">Alta</option>
+        </select>
+      </label>
+    </div>
+    <div class="erro" id="erro" role="alert"></div>
+    <div class="rodape">
+      <button type="button" class="btn" id="cancelar-novo">Cancelar</button>
+      <button type="submit" class="btn btn-principal">Criar chamado</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Confirmar exclusão -->
+<dialog id="dlg-excluir" aria-labelledby="dlg-excluir-t">
+  <form method="dialog">
+    <h2 id="dlg-excluir-t">Excluir chamado?</h2>
+    <p id="dlg-excluir-txt"></p>
+    <div class="rodape">
+      <button type="button" class="btn" id="cancelar-excluir">Manter</button>
+      <button type="button" class="btn btn-perigo" id="confirmar-excluir">Excluir chamado</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="aviso" id="aviso" role="status"></div>
+
+<script>
+const API = "/api/chamados";
+const STATUS = ["aberto", "em andamento", "resolvido"];
+const STATUS_ROTULO = { "aberto": "Aberto", "em andamento": "Em andamento", "resolvido": "Resolvido" };
+const STATUS_CLASSE = { "aberto": "aberto", "em andamento": "andamento", "resolvido": "resolvido" };
+const PRIORIDADES = { alta: "Alta", media: "Média", baixa: "Baixa" };
+const NIVEL = { baixa: 1, media: 2, alta: 3 };
+
+const $ = (id) => document.getElementById(id);
+const filtro = { status: "", prioridade: "" };
+let aExcluir = null;
+
+// Escapa o texto digitado para não permitir injeção de HTML
+const esc = (t) => String(t ?? "").replace(/[&<>"']/g, c =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+function formatarData(texto) {
+  const d = new Date(texto.replace(" ", "T"));
+  if (isNaN(d)) return texto;
+  return d.toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).replace(".", "");
+}
+
+function avisar(msg) {
+  const el = $("aviso");
+  el.textContent = msg;
+  el.classList.add("visivel");
+  clearTimeout(avisar.t);
+  avisar.t = setTimeout(() => el.classList.remove("visivel"), 2200);
+}
+
+async function buscar(params = {}) {
+  const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v));
+  const resp = await fetch(`${API}?${qs}`);
+  return resp.json();
+}
+
+/* ---------- Barra lateral ---------- */
+function desenharFiltros(todos) {
+  const contar = (campo, valor) => todos.filter(c => c[campo] === valor).length;
+
+  const itens = (campo, opcoes, rotulos, ponto) => [
+    { v: "", r: campo === "status" ? "Todos" : "Todas", n: todos.length },
+    ...opcoes.map(v => ({ v, r: rotulos[v], n: contar(campo, v) })),
+  ].map(i => `
+    <li><button class="filtro" data-campo="${campo}" data-v="${i.v}" aria-pressed="${filtro[campo] === i.v}">
+      ${ponto && i.v ? `<span class="ponto ${STATUS_CLASSE[i.v]}"></span>` : `<span class="ponto"></span>`}
+      ${i.r}<span class="n">${i.n}</span>
+    </button></li>`).join("");
+
+  $("filtros-status").innerHTML = itens("status", STATUS, STATUS_ROTULO, true);
+  $("filtros-prioridade").innerHTML = itens("prioridade", Object.keys(PRIORIDADES), PRIORIDADES, false);
+}
+
+/* ---------- Lista ---------- */
+function linha(c) {
+  return `
+  <article class="chamado ${STATUS_CLASSE[c.status]}" data-id="${c.id}">
+    <div class="sinal n${NIVEL[c.prioridade]}" role="img" aria-label="Prioridade ${PRIORIDADES[c.prioridade]}" title="Prioridade ${PRIORIDADES[c.prioridade]}">
+      <i></i><i></i><i></i>
+    </div>
+    <div class="corpo">
+      <h3 class="titulo"><span class="id">#${c.id}</span>${esc(c.titulo)}</h3>
+      ${c.descricao ? `<p class="desc">${esc(c.descricao)}</p>` : ""}
+      <div class="meta">${esc(c.solicitante)} abriu em ${formatarData(c.criado_em)}</div>
+    </div>
+    <div class="acoes">
+      <div class="estado" role="group" aria-label="Status do chamado #${c.id}">
+        ${STATUS.map(s => `<button data-acao="status" data-v="${s}" aria-pressed="${s === c.status}">${STATUS_ROTULO[s]}</button>`).join("")}
+      </div>
+      <div class="extras">
+        ${c.status === "resolvido" ? `<button class="btn-reabrir" data-acao="reabrir">Reabrir chamado</button>` : ""}
+        <select data-acao="prioridade" aria-label="Prioridade do chamado #${c.id}">
+          ${Object.entries(PRIORIDADES).map(([v, r]) => `<option value="${v}" ${v === c.prioridade ? "selected" : ""}>Prioridade ${r.toLowerCase()}</option>`).join("")}
+        </select>
+        <button class="link-excluir" data-acao="excluir">Excluir</button>
+      </div>
+    </div>
+  </article>`;
+}
+
+async function carregar() {
+  const [todos, lista] = await Promise.all([
+    buscar(),
+    buscar({ status: filtro.status, prioridade: filtro.prioridade }),
+  ]);
+  desenharFiltros(todos);
+
+  const nomeStatus = filtro.status ? STATUS_ROTULO[filtro.status] : "";
+  const nomePrio = filtro.prioridade ? `prioridade ${PRIORIDADES[filtro.prioridade].toLowerCase()}` : "";
+  $("titulo-lista").textContent = [nomeStatus, nomePrio].filter(Boolean).join(", ") || "Todos os chamados";
+
+  const abertos = todos.filter(c => c.status === "aberto").length;
+  $("resumo").textContent = todos.length
+    ? `${lista.length} de ${todos.length} ${todos.length === 1 ? "chamado" : "chamados"} · ${abertos} ${abertos === 1 ? "aberto" : "abertos"}`
+    : "Nenhum chamado cadastrado";
+
+  $("lista").innerHTML = lista.length ? lista.map(linha).join("") : `
+    <div class="vazio">
+      <strong>${todos.length ? "Nenhum chamado com esse filtro" : "Nenhum chamado ainda"}</strong>
+      ${todos.length ? "Escolha outro filtro na barra lateral." : "Use “Novo chamado” para registrar o primeiro pedido."}
+    </div>`;
+}
+
+/* ---------- Ações ---------- */
+async function atualizar(id, campo, valor) {
+  await fetch(`${API}/${id}/${campo}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ [campo]: valor }),
+  });
+  await carregar();
+  avisar(campo === "status" ? `Chamado #${id}: ${STATUS_ROTULO[valor].toLowerCase()}` : `Chamado #${id}: prioridade ${PRIORIDADES[valor].toLowerCase()}`);
+}
+
+async function reabrir(id) {
+  const resp = await fetch(`${API}/${id}/reabrir`, { method: "POST" });
+  if (!resp.ok) { avisar((await resp.json()).erro); return; }
+  await carregar();
+  avisar(`Chamado #${id} reaberto`);
+}
+
+$("lista").addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-acao]");
+  if (!btn) return;
+  const id = btn.closest(".chamado").dataset.id;
+  if (btn.dataset.acao === "status") atualizar(id, "status", btn.dataset.v);
+  if (btn.dataset.acao === "reabrir") reabrir(id);
+  if (btn.dataset.acao === "excluir") {
+    aExcluir = id;
+    const titulo = btn.closest(".chamado").querySelector(".titulo").textContent;
+    $("dlg-excluir-txt").textContent = `${titulo} será removido definitivamente.`;
+    $("dlg-excluir").showModal();
+  }
+});
+$("lista").addEventListener("change", (e) => {
+  if (e.target.dataset.acao === "prioridade") atualizar(e.target.closest(".chamado").dataset.id, "prioridade", e.target.value);
+});
+
+document.querySelector(".lateral").addEventListener("click", (e) => {
+  const btn = e.target.closest(".filtro");
+  if (!btn) return;
+  filtro[btn.dataset.campo] = btn.dataset.v;
+  carregar();
+});
+
+/* Excluir */
+$("cancelar-excluir").onclick = () => $("dlg-excluir").close();
+$("confirmar-excluir").onclick = async () => {
+  await fetch(`${API}/${aExcluir}`, { method: "DELETE" });
+  $("dlg-excluir").close();
+  await carregar();
+  avisar(`Chamado #${aExcluir} excluído`);
+};
+
+/* Novo chamado */
+$("abrir-novo").onclick = () => { $("erro").textContent = ""; $("dlg-novo").showModal(); $("titulo").focus(); };
+$("cancelar-novo").onclick = () => $("dlg-novo").close();
+
+$("form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const resp = await fetch(API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      titulo: $("titulo").value,
+      descricao: $("descricao").value,
+      solicitante: $("solicitante").value,
+      prioridade: $("prioridade").value,
+    }),
+  });
+  if (!resp.ok) { $("erro").textContent = (await resp.json()).erro; return; }
+  const novo = await resp.json();
+  e.target.reset();
+  $("dlg-novo").close();
+  await carregar();
+  avisar(`Chamado #${novo.id} criado`);
+});
+
+carregar();
+</script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+# Ambiente virtual do Python
+venv/
+.venv/
+env/
+
+# Arquivos gerados pelo Python
+__pycache__/
+*.py[cod]
+
+# Banco de dados local (criado automaticamente ao iniciar o app)
+chamados.db
+
+# Variáveis de ambiente e configurações locais
+.env
+
+# Editores
+.idea/
+.vscode/
